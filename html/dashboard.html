@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Dashboard - NeuroMind</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+    <canvas id="neuro-bg"></canvas>
+    <button class="fab-chat" id="fabChat" onclick="toggleChat(true)"><i class="fas fa-comment-medical"></i></button>
+
+    <aside class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <h3><i class="fas fa-robot"></i> Assistant</h3>
+            <button class="chat-close-btn" onclick="toggleChat(false)"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="msg msg-bot">Welcome! I can explain the ML models or help you navigate.</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Ask details..." onkeypress="handleKeyPress(event)">
+            <button class="btn-send" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </aside>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+            <div class="brand-text">NEUROMIND</div>
+        </div>
+        <ul class="nav-list">
+            <li><a href="/dashboard" class="nav-link active-link"><i class="fas fa-th-large"></i><span class="link-text">ML Models</span></a></li>
+            <li><a href="/patient-records" class="nav-link"><i class="fas fa-users"></i><span class="link-text">Patient Records</span></a></li>
+            <li><a href="/chatbot" class="nav-link"><i class="fas fa-comments"></i><span class="link-text">AI Chatbot</span></a></li>
+            <li><a href="/classification" class="nav-link"><i class="fas fa-chart-line"></i><span class="link-text">Classification</span></a></li>
+            <li style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);"><a href="/login" class="nav-link"><i class="fas fa-sign-out-alt"></i><span class="link-text">Logout</span></a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="doctor-info">
+            <div class="doctor-header">
+                <div class="doctor-details">
+                    <h1 id="doctorName">Dr. Welcome</h1>
+                    <div class="doctor-meta">
+                        <span><i class="fas fa-id-card"></i> ID: <span id="doctorId">-</span></span>
+                        <span><i class="fas fa-hospital"></i> Hospital: <span id="doctorHospital">-</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>Welcome to NeuroMind</h2>
+            <p>Select a tool to begin analysis or manage records.</p>
+        </div>
+
+        <div class="models-grid">
+            <div class="model-card" onclick="window.location.href='/patient-records'">
+                <div class="model-icon"><i class="fas fa-users"></i></div>
+                <h3>Patient Records</h3>
+                <span class="model-status status-nav">Navigation</span>
+                <p>Manage patient data and view history.</p>
+            </div>
+            <div class="model-card" onclick="window.location.href='/chatbot'">
+                <div class="model-icon"><i class="fas fa-comments"></i></div>
+                <h3>AI Chatbot</h3>
+                <span class="model-status status-nav">Navigation</span>
+                <p>Interact with the AI assistant.</p>
+            </div>
+            <div class="model-card" onclick="window.location.href='/classification'">
+                <div class="model-icon"><i class="fas fa-chart-line"></i></div>
+                <h3>Classification Tool</h3>
+                <span class="model-status status-nav">Navigation</span>
+                <p>Upload and classify new patient data.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Load doctor info from localStorage
+        const doctor = JSON.parse(localStorage.getItem('currentDoctor'));
+        if (doctor) {
+            document.getElementById('doctorName').textContent = doctor.name || 'Dr. Welcome';
+            document.getElementById('doctorId').textContent = doctor.id || '-';
+            document.getElementById('doctorHospital').textContent = doctor.hospital || '-';
+        }
+    </script>
+</body>
+</html>

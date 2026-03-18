@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - NeuroMind</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="visual-side" id="visualSide">
+            <img id="bg-image" src="/depiction-human-brain-intellect.jpg" alt="Brain visualization">
+            
+            <div class="video-overlay"></div>
+
+            <div class="brand-overlay">
+                <h1 class="brand-title">NEUROMIND</h1>
+                <p class="brand-subtitle">Advanced AI Diagnostics Platform</p>
+            </div>
+        </div>
+
+        <div class="login-side">
+            <div class="top-nav">
+                <a href="/register" class="btn-outline">Register</a>
+            </div>
+
+            <div class="login-header">
+                <h2>Welcome Back</h2>
+                <p>Please sign in to access your dashboard.</p>
+            </div>
+
+            <form id="loginForm">
+                <div id="successBanner" class="success-banner">
+                    <i class="fas fa-check-circle"></i> Registration successful. Please sign in.
+                </div>
+
+                <div id="errorBanner" class="error-banner">
+                    <i class="fas fa-exclamation-circle"></i> Invalid credentials. Please try again.
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="username" class="form-input" placeholder="Enter your email">
+                        <i class="fas fa-envelope input-icon"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="password" class="form-input" placeholder="••••••••">
+                        <i class="fas fa-lock input-icon"></i>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; color: #94a3b8; cursor: pointer;">
+                        <input type="checkbox" style="accent-color: #38bdf8;"> Remember me
+                    </label>
+                    <a href="#" style="color: #38bdf8; text-decoration: none;">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="btn-primary">Sign In</button>
+            </form>
+
+            <div class="form-footer">
+                <p>Don't have an account? <a href="/register">Register as Doctor</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/login.js"></script>
+</body>
+</html>

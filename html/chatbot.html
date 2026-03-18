@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot - NeuroMind-DT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
+</head>
+<body>
+
+    <canvas id="neuro-bg"></canvas>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="menu-btn" id="menuBtn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+            <div class="brand-text">NEUROMIND</div>
+        </div>
+        <ul class="nav-list">
+            <li><a href="/dashboard" class="nav-link"><i class="fas fa-th-large"></i><span class="link-text">ML Models</span></a></li>
+            <li><a href="/patient-records" class="nav-link"><i class="fas fa-users"></i><span class="link-text">Patient Records</span></a></li>
+            <li><a href="/chatbot" class="nav-link active-link"><i class="fas fa-comments"></i><span class="link-text">AI Chatbot</span></a></li>
+            <li><a href="/classification" class="nav-link"><i class="fas fa-chart-line"></i><span class="link-text">Classification</span></a></li>
+            <li style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);"><a href="/login" class="nav-link"><i class="fas fa-sign-out-alt"></i><span class="link-text">Logout</span></a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="chatbot-container">
+            <div class="chatbot-header">
+                <div class="chatbot-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <h2>NeuroMind AI Assistant</h2>
+                    <p>Ask me anything about Dravet Syndrome</p>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome message -->
+                <div class="message bot">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>Hello! I'm NeuroMind AI, your assistant for Dravet Syndrome information. How can I help you today?</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <form id="chatForm" class="chat-input-form">
+                    <input 
+                        type="text" 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Ask a question about Dravet Syndrome..."
+                        onkeypress="handleKeyPress(event)"
+                        autocomplete="off"
+                    />
+                    <button type="submit" id="sendBtn" class="btn-send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/chatbot.js"></script>
+</body>
+</html>

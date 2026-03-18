@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Registration - NeuroMind</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/register.css">
+</head>
+<body>
+
+    <div class="container">
+        <div class="visual-side">
+            <img id="bg-image" src="/depiction-human-brain-intellect.jpg" alt="Brain visualization">
+            <div class="video-overlay"></div>
+            <div class="brand-overlay">
+                <h1 class="brand-title">NEUROMIND</h1>
+                <p class="brand-subtitle">Doctor Registration Portal</p>
+            </div>
+        </div>
+
+        <div class="register-side">
+            <div class="top-nav">
+                <a href="/login" class="btn-outline">Back to Login</a>
+            </div>
+
+            <div class="register-header">
+                <h2>Create Doctor Account</h2>
+                <p>Register your credentials to access the NeuroMind dashboard.</p>
+            </div>
+
+            <form id="registerForm">
+                <div id="errorBanner" class="error-banner">
+                    <i class="fas fa-exclamation-circle"></i> Please check your details.
+                </div>
+
+                <div id="successBanner" class="success-banner">
+                    <i class="fas fa-check-circle"></i> Registration successful. Redirecting to login...
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="doctorName" class="form-input" placeholder="Dr. John Doe" required>
+                            <i class="fas fa-user-md input-icon"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Doctor ID (optional)</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="doctorId" class="form-input" placeholder="DOC-1234">
+                            <i class="fas fa-id-card input-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Hospital</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="hospital" class="form-input" placeholder="Hospital or clinic name" required>
+                        <i class="fas fa-hospital input-icon"></i>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <div class="input-wrapper">
+                            <input type="email" id="username" class="form-input" placeholder="doctor@example.com" required>
+                            <i class="fas fa-envelope input-icon"></i>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="password" class="form-input" placeholder="Minimum 6 characters" required>
+                            <i class="fas fa-lock input-icon"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="confirmPassword" class="form-input" placeholder="Re-enter password" required>
+                        <i class="fas fa-shield-alt input-icon"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Register Doctor</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/register.js"></script>
+</body>
+</html>

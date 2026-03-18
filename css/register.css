@@ -1,0 +1,292 @@
+/* THEME: NEURO BRAIN - Register Page */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(145deg, #f8f7fc 0%, #fdf8fb 40%, #ffffff 100%);
+    height: 100vh;
+    overflow: hidden;
+    color: #1e1e2e;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+.visual-side {
+    flex: 1;
+    position: relative;
+    background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #d946ef 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 2rem;
+}
+
+#bg-video, #bg-image {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.85;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 1;
+    background: transparent;
+}
+
+.brand-overlay {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 800px;
+}
+
+.brand-title {
+    font-size: 4rem;
+    font-weight: 800;
+    letter-spacing: -2px;
+    margin-bottom: 0.5rem;
+    color: #ffffff;
+    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.brand-subtitle {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.register-side {
+    width: 550px;
+    min-width: 450px;
+    background: #ffffff;
+    border-left: 1px solid rgba(139, 92, 246, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 2rem 3rem;
+    box-shadow: -20px 0 50px rgba(139, 92, 246, 0.1);
+    position: relative;
+    z-index: 10;
+    overflow-y: auto;
+}
+
+.register-header { margin-bottom: 1.5rem; }
+.register-header h2 { font-size: 1.8rem; color: #1e1e2e; font-weight: 700; margin-bottom: 0.5rem; }
+.register-header p { color: #4b5563; font-size: 0.95rem; }
+
+.form-row { display: flex; gap: 1rem; }
+.form-row .form-group { flex: 1; }
+
+.form-group { margin-bottom: 1rem; position: relative; }
+
+.form-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: #374151;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.input-wrapper { position: relative; }
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 0.85rem 0.85rem 0.85rem 2.5rem;
+    background: #f5f3ff;
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 10px;
+    color: #1e1e2e;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+.form-select { padding-left: 0.85rem; }
+.form-select option { background: white; color: #1e1e2e; }
+
+.input-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    transition: 0.3s;
+    font-size: 0.9rem;
+}
+.form-input:focus + .input-icon { color: #8b5cf6; }
+
+.btn-primary {
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-top: 0.5rem;
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.45);
+}
+
+.form-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #4b5563;
+}
+.form-footer a { color: #7c3aed; text-decoration: none; font-weight: 500; }
+.form-footer a:hover { text-decoration: underline; }
+
+.top-nav { position: absolute; top: 1.5rem; right: 2rem; }
+.btn-outline {
+    padding: 0.5rem 1.2rem;
+    border: 1px solid #8b5cf6;
+    border-radius: 50px;
+    color: #7c3aed;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: 0.3s;
+}
+.btn-outline:hover { background: rgba(139, 92, 246, 0.1); }
+
+.error-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+    padding: 0.7rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: none;
+    animation: slideIn 0.3s ease;
+}
+
+.success-banner {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+    color: #7c3aed;
+    padding: 0.7rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: none;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (max-width: 900px) {
+    .visual-side { display: none; }
+    .register-side { width: 100%; min-width: 0; padding: 1.5rem; }
+}
+
+/* Page Transition Animations */
+.page-transition {
+    animation: pageSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.page-transition-out {
+    animation: pageSlideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes pageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pageSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+}
+
+/* Form elements entrance animation */
+.register-side {
+    animation: formSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes formSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.register-header, .form-group, .form-row, .btn-primary {
+    opacity: 0;
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.register-header { animation-delay: 0.1s; }
+.form-row:nth-of-type(1) { animation-delay: 0.15s; }
+.form-group:nth-of-type(2) { animation-delay: 0.2s; }
+.form-row:nth-of-type(2) { animation-delay: 0.25s; }
+.form-group:nth-of-type(4) { animation-delay: 0.3s; }
+.btn-primary { animation-delay: 0.35s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Visual side animation */
+.visual-side .brand-overlay {
+    animation: brandFadeIn 0.8s ease 0.2s forwards;
+    opacity: 0;
+}
+
+@keyframes brandFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}

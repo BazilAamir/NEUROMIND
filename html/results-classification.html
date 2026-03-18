@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classification Results - NeuroMind-DT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/results-classification.css">
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="loader"></div>
+        <p style="margin-top: 1rem; color: #38bdf8; font-weight: 600;">Analyzing EEG Data on Raspberry Pi...</p>
+        <p style="margin-top: 0.5rem; color: #94a3b8; font-size: 0.9rem;">This may take a few minutes...</p>
+    </div>
+
+    <canvas id="neuro-bg"></canvas>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+            <div class="brand-text">NEUROMIND</div>
+        </div>
+        <ul class="nav-list">
+            <li><a href="/dashboard" class="nav-link"><i class="fas fa-th-large"></i><span class="link-text">ML Models</span></a></li>
+            <li><a href="/patient-records" class="nav-link"><i class="fas fa-users"></i><span class="link-text">Patient Records</span></a></li>
+            <li><a href="/chatbot" class="nav-link"><i class="fas fa-comments"></i><span class="link-text">AI Chatbot</span></a></li>
+            <li><a href="/classification" class="nav-link active-link"><i class="fas fa-chart-line"></i><span class="link-text">Classification</span></a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <div>
+                <h1>Analysis Results 🧠</h1>
+                <p id="file-title">Processing session data...</p>
+            </div>
+            <a href="/classification" class="btn-action"><i class="fas fa-redo"></i> New Analysis</a>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Mean Prediction</div>
+                <div class="metric-value" id="metric-mean">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Model Confidence</div>
+                <div class="metric-value" id="metric-conf">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Signal Duration</div>
+                <div class="metric-value" id="metric-duration">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Processing Status</div>
+                <div class="metric-value" id="metric-status" style="font-size: 1.2rem; color: #94a3b8;">Processing...</div>
+            </div>
+        </div>
+
+        <div id="error-container"></div>
+
+        <div class="results-split">
+            <div>
+                <div class="content-card">
+                    <h3 class="section-title">Diagnostic Verdict</h3>
+                    <div id="badge-container">
+                        <span class="class-badge badge-loading" id="diag-badge"><i class="fas fa-sync-alt fa-spin"></i> Awaiting Result...</span>
+                    </div>
+                    <p id="diag-description" style="color: #94a3b8; line-height: 1.6;">
+                        The analysis result will appear here after the model completes the pattern recognition on the EEG file.
+                    </p>
+
+                    <div class="probabilities-card" id="probabilities-card" style="display: none;">
+                        <h4 style="color: #f8fafc; margin-bottom: 1rem; font-size: 1.1rem;">Class Probabilities</h4>
+                        <div class="prob-item">
+                            <span class="prob-label">Dravet Syndrome</span>
+                            <span class="prob-value" id="prob-dravet">--</span>
+                        </div>
+                        <div class="prob-item">
+                            <span class="prob-label">Control Group</span>
+                            <span class="prob-value" id="prob-control">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-card">
+                <h3 class="section-title">Metadata</h3>
+                <table class="data-table">
+                    <tr>
+                        <td style="color: #94a3b8;">File Name</td>
+                        <td id="meta-file">--</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8;">Timestamp</td>
+                        <td id="meta-time">--</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8;">Hardware</td>
+                        <td>Raspberry Pi 5</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #94a3b8;">Processing Time</td>
+                        <td id="meta-timing">--</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/results-classification.js"></script>
+</body>
+</html>
