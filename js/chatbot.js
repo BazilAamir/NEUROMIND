@@ -1,13 +1,21 @@
 
         // ===========================================
-        // CONFIGURATION - MATCHES classification.html
+        // CONFIGURATION - Get Pi IP from PiConnect
         // ===========================================
-        const PI_IP = '172.18.124.246';  // Same IP as classification.html
-        const PI_PORT = '5001';
-        const PI_QUERY_URL = `http://${PI_IP}:${PI_PORT}/query`;
+        function getPiIp() {
+            if (typeof PiConnect !== 'undefined' && PiConnect.config?.ip) {
+                return PiConnect.config.ip;
+            }
+            return localStorage.getItem('pi_ip') || '';
+        }
+
+        function getQueryUrl() {
+            const ip = getPiIp();
+            return ip ? `http://${ip}:5001/query` : '';
+        }
 
         console.log('NeuroMind Chatbot initialized');
-        console.log('Query URL:', PI_QUERY_URL);
+        console.log('Query URL will be determined when connected to Pi');
 
         // ===========================================
         // SIDEBAR TOGGLE (match dashboard)
@@ -15,8 +23,6 @@
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
         }
-        const menuBtn = document.getElementById('menuBtn');
-        if (menuBtn) menuBtn.addEventListener('click', toggleSidebar);
 
         // ===========================================
         // BACKGROUND ANIMATION
@@ -113,12 +119,20 @@
             const typingMsg = addTypingIndicator();
 
             try {
+                const queryUrl = getQueryUrl();
+                if (!queryUrl) {
+                    addMessage('❌ Error: Pi not connected. Please connect to Raspberry Pi first using the Pi button.', 'bot');
+                    chatInput.disabled = false;
+                    sendBtn.disabled = false;
+                    return;
+                }
+
                 console.log('Sending query to Pi:', text);
-                console.log('Query URL:', PI_QUERY_URL);
-                
+                console.log('Query URL:', queryUrl);
+
                 // ✅ FIX: Use the SAME pattern as classification.html
                 // Include proper headers: Content-Type AND Accept
-                const response = await fetch(PI_QUERY_URL, {
+                const response = await fetch(queryUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -153,9 +167,10 @@
             } catch (error) {
                 console.error('Error querying Pi:', error);
                 typingMsg.remove();
-                
+
                 // ✅ FIX: Show detailed error message like classification.html
-                addMessage(`❌ Error: ${error.message}\n\nPlease check:\n• Raspberry Pi is online at ${PI_IP}\n• wake_server.py is running on port ${PI_PORT}\n• Ollama and TinyLLaMA are installed`, 'bot');
+                const piIp = getPiIp() || '[No IP connected]';
+                addMessage(`❌ Error: ${error.message}\n\nPlease check:\n• Raspberry Pi is online at ${piIp}\n• wake_server.py is running on port 5001\n• Ollama and TinyLLaMA are installed`, 'bot');
             } finally {
                 // Re-enable input
                 chatInput.disabled = false;

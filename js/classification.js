@@ -1,5 +1,22 @@
 
-    const PI_IP = '172.18.124.246';
+    // ── PI IP - Get from PiConnect (no hardcoded IP) ──
+    function getPiIp() {
+        // First check PiConnect object, then localStorage
+        if (typeof PiConnect !== 'undefined' && PiConnect.config?.ip) {
+            return PiConnect.config.ip;
+        }
+        return localStorage.getItem('pi_ip') || '';
+    }
+
+    // Check if Pi is connected
+    function isPiConnected() {
+        const ip = getPiIp();
+        if (!ip) return false;
+        if (typeof PiConnect !== 'undefined') {
+            return PiConnect.config?.connected || false;
+        }
+        return !!ip; // If we have an IP, assume it might be connected
+    }
 
     // ── LOAD PATIENTS FROM DATABASE ──
     async function loadPatients() {
@@ -41,9 +58,21 @@
             patientSelect.innerHTML = '<option value="">Error loading patients</option>';
         }
     }
-    const PI_WAKE_URL     = `http://${PI_IP}:5001/wake`;
-    const PI_UPLOAD_URL   = `http://${PI_IP}:5000/`;
-    const PI_SHUTDOWN_URL = `http://${PI_IP}:5001/shutdown`;
+    // Dynamic URL getters - uses connected Pi IP
+    function getPiWakeUrl() {
+        const ip = getPiIp();
+        return ip ? `http://${ip}:5001/wake` : '';
+    }
+
+    function getPiUploadUrl() {
+        const ip = getPiIp();
+        return ip ? `http://${ip}:5000/` : '';
+    }
+
+    function getPiShutdownUrl() {
+        const ip = getPiIp();
+        return ip ? `http://${ip}:5001/shutdown` : '';
+    }
     
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('active');
@@ -60,6 +89,19 @@
         const statusBox     = document.getElementById('statusBox');
         const statusMessage = document.getElementById('statusMessage');
 
+        // ── CHECK PI CONNECTION FIRST ──
+        const piIp = getPiIp();
+        if (!piIp) {
+            statusBox.className = 'alert-box error';
+            statusMessage.innerHTML = '<strong>❌ Error:</strong> Please connect to Raspberry Pi first using the Pi button';
+            // Open PiConnect modal if available
+            if (typeof PiConnect !== 'undefined') {
+                PiConnect.openModal();
+            }
+            e.target.value = '';
+            return;
+        }
+
         try {
             // ── STEP 1: Wake Pi server ──
             uploadArea.classList.add('uploading');
@@ -71,7 +113,7 @@
 
             // ✅ FIX: Add 'Accept' and 'Content-Type' headers + empty JSON body
             //         so Flask never gets a bad request on the /wake endpoint
-            const wakeResponse = await fetch(PI_WAKE_URL, {
+            const wakeResponse = await fetch(getPiWakeUrl(), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -99,7 +141,7 @@
             formData.append('laptop_ip', window.location.hostname || 'localhost');
 
             // ✅ FIX: Add 'Accept' header so upload_server.py returns JSON
-            const uploadResponse = await fetch(PI_UPLOAD_URL, {
+            const uploadResponse = await fetch(getPiUploadUrl(), {
                 method: 'POST',
                 headers: { 'Accept': 'application/json' },
                 body: formData
@@ -122,7 +164,7 @@
             uploadHint.textContent = 'Shutting down Pi upload server...';
 
             // ✅ FIX: Add headers + body here too
-            await fetch(PI_SHUTDOWN_URL, {
+            await fetch(getPiShutdownUrl(), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -319,10 +361,25 @@
         resize(); animate();
     }
 
+    // ── Update Pi Status display ──
+    function updatePiStatusDisplay() {
+        const piStatusEl = document.getElementById('piStatus');
+        if (piStatusEl) {
+            const ip = getPiIp();
+            piStatusEl.textContent = ip || 'Not connected';
+        }
+    }
+
     window.onload = function() {
         loadPatients();
         initBgAnimation();
         initBrainAnimation();
         initSignalAnimation();
+
+        // Update Pi Status display on page load
+        updatePiStatusDisplay();
+
+        // Also update when PiConnect changes (poll every 2 seconds)
+        setInterval(updatePiStatusDisplay, 2000);
     };
     

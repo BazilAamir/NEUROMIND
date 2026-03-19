@@ -6,7 +6,8 @@
     <title>Classification Input - NeuroMind</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/classification.css">
+    <link rel="stylesheet" href="/css/classification.css">
+    <link rel="stylesheet" href="/css/pi-connect.css">
 </head>
 <body>
 
@@ -54,7 +55,7 @@
                 <div class="config-box">
                     <div class="config-item">
                         <span class="config-label">🔗 Pi Connection</span>
-                        <span class="config-value" id="piStatus">172.18.124.246</span>
+                        <span class="config-value" id="piStatus">Not connected</span>
                     </div>
                     <div class="config-item">
                         <span class="config-label">📂 Upload Path</span>
@@ -69,8 +70,8 @@
             </div>
 
             <div class="method-grid">
-                
-                <div class="method-card" onclick="window.location.href='results-classification.html'">
+
+                <div class="method-card" onclick="window.location.href='/results-classification'">
                     <div class="icon-overlay"><i class="fas fa-project-diagram"></i></div>
                     <canvas id="canvasCore" class="method-canvas"></canvas>
                     <div class="method-overlay">
@@ -79,7 +80,7 @@
                     </div>
                 </div>
 
-                <div class="method-card" onclick="window.location.href='results-autoencoder.html'">
+                <div class="method-card" onclick="window.location.href='/results-autoencoder'">
                     <div class="icon-overlay"><i class="fas fa-wave-square"></i></div>
                     <canvas id="canvasSignal" class="method-canvas"></canvas>
                     <div class="method-overlay">
@@ -93,6 +94,7 @@
         </div>
     </main>
 
-    <script src="../js/classification.js"></script>
+    <script src="/js/classification.js"></script>
+    <script src="/js/pi-connect.js"></script>
 </body>
 </html>

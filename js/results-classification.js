@@ -1,7 +1,29 @@
 
-        const API_URL = 'http://172.18.124.246:5001/classify';
+        // ── Get Pi IP from PiConnect (no hardcoded IP) ──
+        function getPiIp() {
+            if (typeof PiConnect !== 'undefined' && PiConnect.config?.ip) {
+                return PiConnect.config.ip;
+            }
+            return localStorage.getItem('pi_ip') || '';
+        }
+
+        function getApiUrl() {
+            const ip = getPiIp();
+            return ip ? `http://${ip}:5001/classify` : '';
+        }
 
         async function runAnalysis() {
+            const API_URL = getApiUrl();
+            if (!API_URL) {
+                console.error('Pi not connected');
+                document.getElementById('metric-status').innerText = "Pi Not Connected";
+                document.getElementById('metric-status').style.color = "#f87171";
+                if (typeof PiConnect !== 'undefined') {
+                    PiConnect.openModal();
+                }
+                return;
+            }
+
             try {
                 console.log('Starting classification analysis...');
                 const response = await fetch(API_URL, { 

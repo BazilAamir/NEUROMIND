@@ -1,11 +1,33 @@
 
-        const PI_BASE        = 'http://172.18.124.246:5001';
-        const START_URL      = `${PI_BASE}/autoencoder/start`;
-        const STATUS_URL     = `${PI_BASE}/autoencoder/status`;
+        // ── Get Pi IP from PiConnect (no hardcoded IP) ──
+        function getPiIp() {
+            if (typeof PiConnect !== 'undefined' && PiConnect.config?.ip) {
+                return PiConnect.config.ip;
+            }
+            return localStorage.getItem('pi_ip') || '';
+        }
+
+        function getPiBaseUrl() {
+            const ip = getPiIp();
+            return ip ? `http://${ip}:5001` : '';
+        }
+
+        function getStartUrl() {
+            const base = getPiBaseUrl();
+            return base ? `${base}/autoencoder/start` : '';
+        }
+
+        function getStatusUrl() {
+            const base = getPiBaseUrl();
+            return base ? `${base}/autoencoder/status` : '';
+        }
 
         let pollInterval = null;
         let elapsedSec   = 0;
         let timerInterval = null;
+        let START_URL = '';
+        let STATUS_URL = '';
+        let PI_BASE = '';
 
         // ─────────────────────────────────────────
         // OVERLAY HELPERS
@@ -383,6 +405,11 @@
         // INIT
         // ─────────────────────────────────────────
         window.addEventListener('load', () => {
+            // Initialize URL variables
+            START_URL = getStartUrl();
+            STATUS_URL = getStatusUrl();
+            PI_BASE = getPiBaseUrl();
+
             initBgAnimation();
             startAnalysis();
         });
