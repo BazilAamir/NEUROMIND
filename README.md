@@ -75,51 +75,194 @@ FYP Website/
 ## Prerequisites
 
 - Node.js (v14 or higher)
-- MongoDB (local or Atlas)
-- Raspberry Pi (optional, for ML inference)
+- MongoDB (v6.0 or higher) - local installation or MongoDB Atlas account
+- Git
+- Raspberry Pi 4 (optional, for on-device ML inference)
+- Web browser (Chrome, Firefox, or Edge recommended)
 
 ## Installation
 
-1. **Clone the repository**
+### Step 1: Clone the Repository
+
+```bash
+git clone <repository-url>
+cd "FYP Website"
+```
+
+### Step 2: Install Backend Dependencies
+
+Navigate to the backend folder and install all required packages:
+
+```bash
+cd backend
+npm install
+```
+
+This will install the following dependencies:
+- `express` - Web server framework
+- `mongoose` - MongoDB ODM
+- `bcryptjs` - Password hashing
+- `jsonwebtoken` - JWT authentication
+- `cors` - Cross-origin resource sharing
+- `dotenv` - Environment variables
+- `express-validator` - Input validation
+- `nodemon` - Development auto-reload (dev dependency)
+
+### Step 3: MongoDB Setup
+
+#### Option A: Local MongoDB Installation
+
+1. Download and install MongoDB Community Server from [mongodb.com](https://www.mongodb.com/try/download/community)
+
+2. Start MongoDB service:
    ```bash
-   git clone <repository-url>
-   cd "FYP Website"
+   # Windows
+   net start MongoDB
+
+   # macOS/Linux
+   sudo systemctl start mongod
    ```
 
-2. **Install backend dependencies**
+3. Verify MongoDB is running:
    ```bash
-   cd backend
-   npm install
+   mongosh
    ```
 
-3. **Configure environment variables**
+#### Option B: MongoDB Atlas (Cloud)
 
-   Create a `.env` file in the `backend` directory:
-   ```env
-   PORT=5000
-   MONGO_URI=mongodb://localhost:27017/neuromind
-   JWT_SECRET=your_jwt_secret_key
-   ```
+1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/atlas)
+2. Create a new cluster
+3. Click "Connect" and select "Connect your application"
+4. Copy the connection string
 
-4. **Start MongoDB**
+### Step 4: Environment Configuration
 
-   Ensure MongoDB is running on your system or use MongoDB Atlas.
+Create a `.env` file in the `backend` directory:
 
-5. **Run the server**
+```bash
+cd backend
+touch .env
+```
+
+Add the following environment variables:
+
+```env
+# Server Configuration
+PORT=5000
+
+# MongoDB Connection
+# For local MongoDB:
+MONGO_URI=mongodb://localhost:27017/neuromind
+
+# For MongoDB Atlas (replace with your connection string):
+# MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/neuromind?retryWrites=true&w=majority
+
+# JWT Secret (use a strong random string)
+JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
+
+# JWT Expiration (optional)
+JWT_EXPIRE=24h
+```
+
+### Step 5: Run the Application
+
+#### Development Mode (with auto-reload)
+
+```bash
+cd backend
+npm run dev
+```
+
+#### Production Mode
+
+```bash
+cd backend
+npm start
+```
+
+### Step 6: Access the Application
+
+Open your web browser and navigate to:
+
+```
+http://localhost:5000
+```
+
+You should see the NeuroMind login page.
+
+## Raspberry Pi Setup (Optional)
+
+For on-device ML inference with Raspberry Pi:
+
+### Hardware Requirements
+- Raspberry Pi 4 (4GB RAM recommended)
+- MicroSD card (32GB or higher)
+- Power supply
+- Network connection (WiFi or Ethernet)
+
+### Software Setup
+
+1. Install Raspberry Pi OS (64-bit recommended)
+
+2. Update the system:
    ```bash
-   # Development mode with auto-reload
-   npm run dev
-
-   # Production mode
-   npm start
+   sudo apt update && sudo apt upgrade -y
    ```
 
-6. **Access the application**
+3. Install Python and dependencies:
+   ```bash
+   sudo apt install python3 python3-pip -y
+   pip3 install tensorflow numpy pandas
+   ```
 
-   Open your browser and navigate to:
+4. Create the upload directory:
+   ```bash
+   mkdir -p /home/neuromind/Neuromind/Codes/uploads
    ```
-   http://localhost:5000
-   ```
+
+5. Configure the Pi's IP address in the web application settings
+
+### Connecting to Raspberry Pi
+
+1. Ensure both devices are on the same network
+2. Navigate to the Pi Connect page in the application
+3. Enter the Raspberry Pi's IP address
+4. Test the connection
+
+## Troubleshooting
+
+### MongoDB Connection Issues
+
+```bash
+# Check if MongoDB is running
+mongosh --eval "db.adminCommand('ping')"
+
+# Check MongoDB logs
+# Windows: Check Event Viewer
+# Linux: sudo journalctl -u mongod
+```
+
+### Port Already in Use
+
+```bash
+# Find and kill process using port 5000
+# Windows
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
+
+# Linux/macOS
+lsof -i :5000
+kill -9 <PID>
+```
+
+### Node Module Issues
+
+```bash
+# Clear node_modules and reinstall
+cd backend
+rm -rf node_modules package-lock.json
+npm install
+```
 
 ## API Endpoints
 
@@ -146,12 +289,6 @@ FYP Website/
 4. Use **Classification Tool** to upload EEG/MRI data
 5. View **Analysis Results** for seizure classification or anomaly detection
 6. Use **AI Chatbot** for assistance
-
-## Raspberry Pi Setup
-
-1. Connect Raspberry Pi to the same network
-2. Configure Pi IP address in the application
-3. Upload files are stored at: `/home/neuromind/Neuromind/Codes/uploads`
 
 ## License
 
