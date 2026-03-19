@@ -135,34 +135,29 @@ This will install the following dependencies:
 3. Click "Connect" and select "Connect your application"
 4. Copy the connection string
 
+
 ### Step 4: Environment Configuration
 
-Create a `.env` file in the `backend` directory:
+**No manual .env setup required!**
 
-```bash
-cd backend
-touch .env
+The `.env` file is already included in the repository. When you clone the repo, you will get a pre-configured `.env` file in the `backend` directory with the following defaults:
+
 ```
-
-Add the following environment variables:
-
-```env
-# Server Configuration
+MONGODB_URI=mongodb://localhost:27017/neuromind
+JWT_SECRET=your_super_secret_jwt_key_change_this
 PORT=5000
-
-# MongoDB Connection
-# For local MongoDB:
-MONGO_URI=mongodb://localhost:27017/neuromind
-
-# For MongoDB Atlas (replace with your connection string):
-# MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/neuromind?retryWrites=true&w=majority
-
-# JWT Secret (use a strong random string)
-JWT_SECRET=your_super_secret_jwt_key_here_make_it_long_and_random
-
-# JWT Expiration (optional)
-JWT_EXPIRE=24h
+# JWT_EXPIRE=24h
 ```
+
+- The default MongoDB connection string works for local development. If you want to use MongoDB Atlas, update the `MONGODB_URI` value in `.env`.
+- The `JWT_SECRET` is a placeholder. For production, change it to a strong, random value.
+- No other changes are needed for local development.
+
+**Summary for new users:**
+
+- MongoDB connection: Already configured for local use. Just ensure MongoDB is running on your machine.
+- JWT secret: Provided for testing. Change for production.
+- No other configuration needed after cloning. Everything works out of the box!
 
 ### Step 5: Run the Application
 
