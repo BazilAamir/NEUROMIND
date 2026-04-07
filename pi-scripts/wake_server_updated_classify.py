@@ -6,11 +6,11 @@
 # Add these imports at the top of wake_server.py:
 # import json
 # import sys
-# sys.path.append('/home/neuromind/Downloads/combined_handler_ds_abnormal_control')
+# sys.path.append('/home/neuromind/Neuromind/Codes')
 # from handler_combined import CombinedEEGHandler
 
 # Configuration - add near the top
-CONFIG_PATH = '/home/neuromind/Downloads/combined_handler_ds_abnormal_control/config_combined.json'
+CONFIG_PATH = '/home/neuromind/Neuromind/Codes/config_combined.json'
 UPLOADS_FOLDER = '/home/neuromind/Neuromind/Codes/uploads'
 
 # Global handler (lazy loaded)
