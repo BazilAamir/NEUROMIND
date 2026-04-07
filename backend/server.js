@@ -72,6 +72,10 @@ app.get('/chatbot', (req, res) => {
     res.sendFile(path.join(__dirname, '../html/chatbot.html'));
 });
 
+app.get('/eeg-live', (req, res) => {
+    res.sendFile(path.join(__dirname, '../html/eeg-live.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

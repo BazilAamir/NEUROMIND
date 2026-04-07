@@ -296,6 +296,141 @@
     border: 1px dashed rgba(139, 92, 246, 0.2);
 }
 
+/* Network Mode Toggle */
+.pi-network-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1rem;
+}
+
+.pi-toggle-btn {
+    flex: 1;
+    padding: 10px 12px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif;
+}
+
+.pi-toggle-btn:hover {
+    background: rgba(139, 92, 246, 0.12);
+    color: #374151;
+}
+
+.pi-toggle-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+    border-color: #a855f7;
+    color: #7c3aed;
+}
+
+.pi-toggle-btn i {
+    font-size: 0.9rem;
+}
+
+/* Auto-Detect Section */
+.pi-auto-detect-section {
+    margin-bottom: 0.75rem;
+}
+
+.pi-detect-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.pi-detect-status i {
+    color: #a855f7;
+}
+
+.pi-detected-network {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 10px;
+}
+
+.pi-detected-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.pi-detected-value {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #16a34a;
+    letter-spacing: 0.5px;
+}
+
+/* Network Select Dropdown */
+.pi-network-select {
+    flex: 1;
+    padding: 8px 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #16a34a;
+    background: white;
+    border: 2px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.pi-network-select:hover {
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+.pi-network-select:focus {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.pi-network-select option {
+    padding: 8px;
+    font-family: 'Courier New', monospace;
+}
+
+.pi-btn-refresh {
+    padding: 8px 12px;
+    background: rgba(34, 197, 94, 0.15);
+    border: none;
+    border-radius: 8px;
+    color: #16a34a;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pi-btn-refresh:hover {
+    background: rgba(34, 197, 94, 0.25);
+    transform: rotate(180deg);
+}
+
+/* Manual Section */
+.pi-manual-section {
+    margin-bottom: 0.75rem;
+}
+
 .pi-btn-scan {
     width: 100%;
     padding: 0.75rem 1rem;

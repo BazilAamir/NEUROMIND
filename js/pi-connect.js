@@ -5,9 +5,57 @@ const PiConnect = {
         ip: localStorage.getItem('pi_ip') || '',
         port: localStorage.getItem('pi_port') || '5001',  // Wake server port
         connected: false,
-        scanning: false
+        scanning: false,
+        detectedNetworkBase: '' // Auto-detected network base
     },
     foundDevices: [], // Array to store found Pi devices during scan
+
+    // Auto-detect local IP using WebRTC - returns all found networks
+    async detectLocalNetwork() {
+        return new Promise((resolve) => {
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            const noop = () => {};
+            const foundNetworks = new Set(); // Use Set to avoid duplicates
+
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(noop);
+
+            pc.onicecandidate = (ice) => {
+                if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+
+                const candidate = ice.candidate.candidate;
+                // Extract IP from candidate string
+                const ipMatch = candidate.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+
+                if (ipMatch) {
+                    const ip = ipMatch[1];
+                    // Filter out non-local IPs (keep 192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+                    if (ip.startsWith('192.168.') || ip.startsWith('10.') ||
+                        (ip.startsWith('172.') && parseInt(ip.split('.')[1]) >= 16 && parseInt(ip.split('.')[1]) <= 31)) {
+                        const parts = ip.split('.');
+                        const networkBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
+                        foundNetworks.add(networkBase);
+                    }
+                }
+            };
+
+            // Timeout after 3 seconds - return all found networks
+            setTimeout(() => {
+                pc.close();
+                const networks = Array.from(foundNetworks);
+
+                if (networks.length === 0) {
+                    resolve({ primary: null, all: [] });
+                } else if (networks.length === 1) {
+                    resolve({ primary: networks[0], all: networks });
+                } else {
+                    // Prioritize 192.168.x.x networks (most common home/office)
+                    const preferred = networks.find(n => n.startsWith('192.168.')) || networks[0];
+                    resolve({ primary: preferred, all: networks });
+                }
+            }, 3000);
+        });
+    },
 
     // Initialize Pi Connect button and modal
     init() {
@@ -53,12 +101,43 @@ const PiConnect = {
 
                     <!-- Network Scan Section -->
                     <div class="pi-scan-section">
-                        <div class="pi-input-group">
-                            <label for="piNetworkBase">Network Base (first 3 octets)</label>
-                            <input type="text" id="piNetworkBase" placeholder="e.g., 192.168.1" value="">
+                        <!-- Network Mode Toggle -->
+                        <div class="pi-network-toggle">
+                            <button class="pi-toggle-btn active" id="piAutoDetectBtn" onclick="PiConnect.setNetworkMode('auto')">
+                                <i class="fas fa-wifi"></i> Auto-Detect
+                            </button>
+                            <button class="pi-toggle-btn" id="piManualBtn" onclick="PiConnect.setNetworkMode('manual')">
+                                <i class="fas fa-keyboard"></i> Manual
+                            </button>
                         </div>
+
+                        <!-- Auto-Detect Section -->
+                        <div class="pi-auto-detect-section" id="piAutoDetectSection">
+                            <div class="pi-detect-status" id="piDetectStatus">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Detecting network...</span>
+                            </div>
+                            <div class="pi-detected-network" id="piDetectedNetwork" style="display: none;">
+                                <div class="pi-detected-label">Detected Network:</div>
+                                <select class="pi-network-select" id="piNetworkSelect">
+                                    <option value="">Select network...</option>
+                                </select>
+                                <button class="pi-btn-refresh" onclick="PiConnect.refreshNetworkDetection()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Manual Entry Section -->
+                        <div class="pi-manual-section" id="piManualSection" style="display: none;">
+                            <div class="pi-input-group">
+                                <label for="piNetworkBase">Network Base (first 3 octets)</label>
+                                <input type="text" id="piNetworkBase" placeholder="e.g., 192.168.1" value="">
+                            </div>
+                        </div>
+
                         <button class="pi-btn pi-btn-scan" id="piScanBtn" onclick="PiConnect.scanNetwork()">
-                            <i class="fas fa-search"></i> Auto-Scan Network
+                            <i class="fas fa-search"></i> Scan Network (0-255)
                         </button>
                         <div class="pi-scan-progress" id="piScanProgress" style="display: none;">
                             <div class="pi-scan-bar">
@@ -120,14 +199,11 @@ const PiConnect = {
         document.getElementById('piIpInput').value = this.config.ip;
         document.getElementById('piPortInput').value = this.config.port;
 
-        // Auto-detect network base from current IP
-        const networkBaseInput = document.getElementById('piNetworkBase');
-        if (this.config.ip) {
-            const parts = this.config.ip.split('.');
-            if (parts.length === 4) {
-                networkBaseInput.value = `${parts[0]}.${parts[1]}.${parts[2]}`;
-            }
-        }
+        // Reset network mode to auto-detect
+        this.setNetworkMode('auto');
+
+        // Auto-detect network base on open
+        this.refreshNetworkDetection();
 
         // Reset scan progress
         const scanProgress = document.getElementById('piScanProgress');
@@ -148,6 +224,96 @@ const PiConnect = {
             deviceList.innerHTML = '';
         }
         this.foundDevices = [];
+    },
+
+    // Set network mode (auto/manual)
+    setNetworkMode(mode) {
+        const autoBtn = document.getElementById('piAutoDetectBtn');
+        const manualBtn = document.getElementById('piManualBtn');
+        const autoSection = document.getElementById('piAutoDetectSection');
+        const manualSection = document.getElementById('piManualSection');
+
+        if (mode === 'auto') {
+            autoBtn.classList.add('active');
+            manualBtn.classList.remove('active');
+            autoSection.style.display = 'block';
+            manualSection.style.display = 'none';
+        } else {
+            autoBtn.classList.remove('active');
+            manualBtn.classList.add('active');
+            autoSection.style.display = 'none';
+            manualSection.style.display = 'block';
+
+            // Pre-fill manual field with detected network if available
+            const networkBaseInput = document.getElementById('piNetworkBase');
+            if (this.config.detectedNetworkBase) {
+                networkBaseInput.value = this.config.detectedNetworkBase;
+            } else if (this.config.ip) {
+                const parts = this.config.ip.split('.');
+                if (parts.length === 4) {
+                    networkBaseInput.value = `${parts[0]}.${parts[1]}.${parts[2]}`;
+                }
+            }
+        }
+    },
+
+    // Refresh network detection
+    async refreshNetworkDetection() {
+        const detectStatus = document.getElementById('piDetectStatus');
+        const detectedNetwork = document.getElementById('piDetectedNetwork');
+        const networkSelect = document.getElementById('piNetworkSelect');
+
+        // Show loading state
+        detectStatus.style.display = 'flex';
+        detectedNetwork.style.display = 'none';
+        detectStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Detecting networks...</span>';
+
+        try {
+            const result = await this.detectLocalNetwork();
+
+            if (result.all && result.all.length > 0) {
+                // Populate dropdown with all detected networks
+                networkSelect.innerHTML = '';
+                result.all.forEach((network, index) => {
+                    const option = document.createElement('option');
+                    option.value = network;
+                    option.textContent = network + '.x';
+                    // Mark preferred network
+                    if (network === result.primary) {
+                        option.textContent += ' (Recommended)';
+                        option.selected = true;
+                    }
+                    networkSelect.appendChild(option);
+                });
+
+                this.config.detectedNetworkBase = result.primary;
+                detectStatus.style.display = 'none';
+                detectedNetwork.style.display = 'flex';
+
+                // Add change listener
+                networkSelect.onchange = () => {
+                    this.config.detectedNetworkBase = networkSelect.value;
+                };
+            } else {
+                // Try to get from saved IP
+                if (this.config.ip) {
+                    const parts = this.config.ip.split('.');
+                    if (parts.length === 4) {
+                        const savedNetwork = `${parts[0]}.${parts[1]}.${parts[2]}`;
+                        this.config.detectedNetworkBase = savedNetwork;
+                        networkSelect.innerHTML = `<option value="${savedNetwork}" selected>${savedNetwork}.x (From saved IP)</option>`;
+                        detectStatus.style.display = 'none';
+                        detectedNetwork.style.display = 'flex';
+                        return;
+                    }
+                }
+                // Show error with fallback
+                detectStatus.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i><span>Could not auto-detect. Use Manual mode.</span>';
+            }
+        } catch (error) {
+            console.error('Network detection error:', error);
+            detectStatus.innerHTML = '<i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i><span>Detection failed. Use Manual mode.</span>';
+        }
     },
 
     // Close modal
@@ -206,20 +372,27 @@ const PiConnect = {
     async autoScanNetwork() {
         if (this.config.scanning) return;
 
-        // Get network base from saved IP
-        let networkBase = '';
-        const savedIp = this.config.ip;
-        if (savedIp) {
-            const parts = savedIp.split('.');
-            if (parts.length === 4) {
-                networkBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
+        // First try to auto-detect network
+        const result = await this.detectLocalNetwork();
+        let networkBase = result.primary;
+
+        // If detection fails, try saved IP
+        if (!networkBase) {
+            const savedIp = this.config.ip;
+            if (savedIp) {
+                const parts = savedIp.split('.');
+                if (parts.length === 4) {
+                    networkBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
+                }
             }
         }
 
+        // Default fallback
         if (!networkBase) {
-            // Default network base if no saved IP
             networkBase = '192.168.1';
         }
+
+        this.config.detectedNetworkBase = networkBase;
 
         this.config.scanning = true;
         const port = this.config.port;
@@ -395,17 +568,32 @@ const PiConnect = {
         const scanText = document.getElementById('piScanText');
         const foundDevicesDiv = document.getElementById('piFoundDevices');
         const deviceList = document.getElementById('piDeviceList');
+        const autoBtn = document.getElementById('piAutoDetectBtn');
 
-        let networkBase = networkBaseInput.value.trim();
+        // Check if auto or manual mode
+        const isAutoMode = autoBtn.classList.contains('active');
+        let networkBase = '';
 
-        // If no network base provided, try to detect from current saved IP
+        if (isAutoMode) {
+            // Use auto-detected network base
+            networkBase = this.config.detectedNetworkBase;
+            if (!networkBase) {
+                this.showToast('Network not detected. Try Manual mode.', 'error');
+                return;
+            }
+        } else {
+            // Use manual input
+            networkBase = networkBaseInput.value.trim();
+        }
+
+        // If no network base, try to detect or use fallback
         if (!networkBase) {
             const savedIp = this.config.ip;
             if (savedIp) {
                 const parts = savedIp.split('.');
                 if (parts.length === 4) {
                     networkBase = `${parts[0]}.${parts[1]}.${parts[2]}`;
-                    networkBaseInput.value = networkBase;
+                    if (!isAutoMode) networkBaseInput.value = networkBase;
                 }
             }
         }

@@ -11,14 +11,16 @@
 </head>
 <body>
 
+    <!-- Loading Overlay -->
     <div id="loading-overlay">
         <div class="loader"></div>
-        <p style="margin-top: 1rem; color: #38bdf8; font-weight: 600;">Analyzing EEG Data on Raspberry Pi...</p>
-        <p style="margin-top: 0.5rem; color: #94a3b8; font-size: 0.9rem;">This may take a few minutes...</p>
+        <p class="loader-title">Analyzing EEG Data on Raspberry Pi...</p>
+        <p class="loader-sub">This may take a few minutes...</p>
     </div>
 
     <canvas id="neuro-bg"></canvas>
 
+    <!-- Sidebar -->
     <nav class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
@@ -28,86 +30,115 @@
             <li><a href="/dashboard" class="nav-link"><i class="fas fa-th-large"></i><span class="link-text">ML Models</span></a></li>
             <li><a href="/patient-records" class="nav-link"><i class="fas fa-users"></i><span class="link-text">Patient Records</span></a></li>
             <li><a href="/chatbot" class="nav-link"><i class="fas fa-comments"></i><span class="link-text">AI Chatbot</span></a></li>
+            <li><a href="/eeg-live" class="nav-link"><i class="fas fa-wave-square"></i><span class="link-text">Live EEG</span></a></li>
             <li><a href="/classification" class="nav-link active-link"><i class="fas fa-chart-line"></i><span class="link-text">Classification</span></a></li>
+            <li style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);"><a href="/login" class="nav-link"><i class="fas fa-sign-out-alt"></i><span class="link-text">Logout</span></a></li>
         </ul>
     </nav>
 
+    <!-- Main -->
     <main class="main-content">
+
+        <!-- Header -->
         <div class="page-header">
             <div>
                 <h1>Analysis Results 🧠</h1>
                 <p id="file-title">Processing session data...</p>
             </div>
-            <a href="/classification" class="btn-action"><i class="fas fa-redo"></i> New Analysis</a>
+            <a href="/classification" class="btn-action">
+                <i class="fas fa-redo"></i> New Analysis
+            </a>
         </div>
 
+        <!-- Metrics -->
         <div class="metrics-grid">
             <div class="metric-card">
-                <div class="metric-title">Mean Prediction</div>
+                <div class="metric-title">Final Diagnosis</div>
                 <div class="metric-value" id="metric-mean">--</div>
             </div>
             <div class="metric-card">
-                <div class="metric-title">Model Confidence</div>
+                <div class="metric-title">Stage 1 Confidence</div>
                 <div class="metric-value" id="metric-conf">--</div>
             </div>
             <div class="metric-card">
-                <div class="metric-title">Signal Duration</div>
+                <div class="metric-title">EEG Windows</div>
                 <div class="metric-value" id="metric-duration">--</div>
             </div>
             <div class="metric-card">
                 <div class="metric-title">Processing Status</div>
-                <div class="metric-value" id="metric-status" style="font-size: 1.2rem; color: #94a3b8;">Processing...</div>
+                <div class="metric-value metric-status" id="metric-status">Processing...</div>
             </div>
         </div>
 
+        <!-- Error -->
         <div id="error-container"></div>
 
+        <!-- Results -->
         <div class="results-split">
-            <div>
+
+            <!-- Left -->
+            <div class="left-col">
+
                 <div class="content-card">
                     <h3 class="section-title">Diagnostic Verdict</h3>
                     <div id="badge-container">
-                        <span class="class-badge badge-loading" id="diag-badge"><i class="fas fa-sync-alt fa-spin"></i> Awaiting Result...</span>
+                        <span class="class-badge badge-loading" id="diag-badge">
+                            <i class="fas fa-sync-alt fa-spin"></i> Awaiting Result...
+                        </span>
                     </div>
-                    <p id="diag-description" style="color: #94a3b8; line-height: 1.6;">
-                        The analysis result will appear here after the model completes the pattern recognition on the EEG file.
+                    <p id="diag-description" class="diag-desc">
+                        The analysis result will appear here after the model completes pattern recognition on the EEG file.
                     </p>
+                    <div class="probabilities-card" id="probabilities-card">
+                        <h4 class="prob-title">Class Probabilities</h4>
+                        <div id="prob-list"></div>
+                    </div>
+                </div>
 
-                    <div class="probabilities-card" id="probabilities-card" style="display: none;">
-                        <h4 style="color: #f8fafc; margin-bottom: 1rem; font-size: 1.1rem;">Class Probabilities</h4>
-                        <div class="prob-item">
-                            <span class="prob-label">Dravet Syndrome</span>
-                            <span class="prob-value" id="prob-dravet">--</span>
-                        </div>
-                        <div class="prob-item">
-                            <span class="prob-label">Control Group</span>
-                            <span class="prob-value" id="prob-control">--</span>
+                <div class="content-card stage-card">
+                    <h3 class="section-title">
+                        <i class="fas fa-sitemap section-icon"></i> Two-Stage Pipeline
+                    </h3>
+                    <div id="stage-details">
+                        <p class="waiting-text">Waiting for results...</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right -->
+            <div class="content-card">
+                <h3 class="section-title">Metadata</h3>
+                <table class="data-table">
+                    <tr><td class="td-label">File Name</td><td id="meta-file">--</td></tr>
+                    <tr><td class="td-label">Timestamp</td><td id="meta-time">--</td></tr>
+                    <tr><td class="td-label">Hardware</td><td>Raspberry Pi 5</td></tr>
+                    <tr><td class="td-label">Processing Time</td><td id="meta-timing">--</td></tr>
+                </table>
+
+                <!-- Decision Flow -->
+                <div class="flow-diagram">
+                    <p class="flow-label">Decision Flow</p>
+                    <div class="flow-body">
+                        <div class="flow-node node-purple">EDF / Array Input</div>
+                        <i class="fas fa-arrow-down flow-arrow arrow-purple"></i>
+                        <div class="flow-node node-purple">Stage 1: DS vs Control</div>
+                        <div class="flow-branches">
+                            <div class="flow-branch">
+                                <i class="fas fa-arrow-down flow-arrow arrow-green"></i>
+                                <div class="flow-node node-green">Control (Non-DS)</div>
+                            </div>
+                            <div class="flow-branch">
+                                <i class="fas fa-arrow-down flow-arrow arrow-red"></i>
+                                <div class="flow-node node-purple">DS → Stage 2</div>
+                                <i class="fas fa-arrow-down flow-arrow arrow-purple"></i>
+                                <div class="flow-node node-pink">DS vs Abnormal</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="content-card">
-                <h3 class="section-title">Metadata</h3>
-                <table class="data-table">
-                    <tr>
-                        <td style="color: #94a3b8;">File Name</td>
-                        <td id="meta-file">--</td>
-                    </tr>
-                    <tr>
-                        <td style="color: #94a3b8;">Timestamp</td>
-                        <td id="meta-time">--</td>
-                    </tr>
-                    <tr>
-                        <td style="color: #94a3b8;">Hardware</td>
-                        <td>Raspberry Pi 5</td>
-                    </tr>
-                    <tr>
-                        <td style="color: #94a3b8;">Processing Time</td>
-                        <td id="meta-timing">--</td>
-                    </tr>
-                </table>
-            </div>
         </div>
     </main>
 
