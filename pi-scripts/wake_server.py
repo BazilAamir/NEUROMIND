@@ -28,7 +28,7 @@ OUTPUT_FOLDER = '/home/neuromind/Neuromind/Codes/output'
 
 # NEW: CombinedEEGHandler configuration
 HANDLER_PATH = '/home/neuromind/Downloads/combined_handler_ds_abnormal_control'
-CONFIG_PATH = '/home/neuromind/Downloads/combined_handler_ds_abnormal_control/config_combined.json'
+CONFIG_PATH = '/home/neuromind/Neuromind/Codes/config_combined.json'
 UPLOADS_FOLDER = '/home/neuromind/Neuromind/Codes/uploads'
 
 # Add handler path to sys.path for imports
