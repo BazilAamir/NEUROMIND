@@ -8,6 +8,7 @@ const PiConnect = {
         scanning: false,
         detectedNetworkBase: '' // Auto-detected network base
     },
+    // Store
     foundDevices: [], // Array to store found Pi devices during scan
 
     // Auto-detect local IP using WebRTC - returns all found networks
@@ -39,7 +40,8 @@ const PiConnect = {
                 }
             };
 
-            // Timeout after 3 seconds - return all found networks
+            // Timeout after 3 seconds - return all found networks =====
+            //this comment
             setTimeout(() => {
                 pc.close();
                 const networks = Array.from(foundNetworks);
