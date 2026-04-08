@@ -1,5 +1,4 @@
-
-        // ── Get Pi IP from PiConnect (no hardcoded IP) ──
+// ── Get Pi IP from PiConnect (no hardcoded IP) ──
         function getPiIp() {
             if (typeof PiConnect !== 'undefined' && PiConnect.config?.ip) {
                 return PiConnect.config.ip;
@@ -108,83 +107,76 @@
         // POPULATE RESULTS — called when Pi returns done+success
         // ─────────────────────────────────────────
         function populateResults(data) {
-            const res    = data.parsed_data;
-            const stats = res.mad_statistics;
+            const res = data.parsed_data || {};
 
-            document.getElementById('pi-mad-mean').innerText = stats.mean || '0.0';
-            const count = (res.anomalies_detected || '0/0').split('/')[0];
-            document.getElementById('pi-anomaly-count').innerText = count;
+            // Update header info
             document.getElementById('pi-file-info').innerText =
-                `File: ${res.file_loaded} • Signal: ${res.signal_shape} • Anomaly: ${res.anomaly_percentage}`;
+                `File: ${res.file_loaded || 'Unknown'} • ${res.signal_shape || ''}`;
 
-            const maxMAD    = parseFloat(stats.max);
-            const maxBadge = maxMAD > 100 ? 'badge-critical' : maxMAD > 50 ? 'badge-warning' : 'badge-normal';
-            const maxLabel = maxMAD > 100 ? 'Critical Spike' : maxMAD > 50 ? 'High' : 'Normal';
+            // Update metric cards
+            const anomCount = res.anomalies_detected || '0';
+            document.getElementById('pi-anomaly-count').innerText = anomCount;
+
+            const tp = res.tp || 0;
+            const fn = res.fn || 0;
+            const fp = res.fp || 0;
+            const da = res.da || 0;
+
+            document.getElementById('pi-detection-stats').innerText = `TP: ${tp}  FN: ${fn}`;
+
+            // Populate log table
+            const prec = (tp + fp) > 0 ? (tp / (tp + fp)) : 0;
+            const rec  = (tp + fn) > 0 ? (tp / (tp + fn)) : 0;
+            const f1   = (prec + rec) > 0 ? (2 * prec * rec / (prec + rec)) : 0;
 
             document.getElementById('pi-log-body').innerHTML = `
                 <tr>
-                    <td>Maximum MAD Error</td>
-                    <td>${stats.max}</td>
-                    <td><span class="${maxBadge}">${maxLabel}</span></td>
-                    <td>Anomaly ${maxMAD > 50 ? 'Flagged' : 'Monitored'}</td>
+                    <td>True Positives (Seizures Detected)</td>
+                    <td>${tp}</td>
+                    <td><span class="${tp > 0 ? 'badge-normal' : 'badge-warning'}">${tp > 0 ? 'Detected' : 'None'}</span></td>
                 </tr>
                 <tr>
-                    <td>Mean MAD Error</td>
-                    <td>${stats.mean}</td>
-                    <td><span class="badge-warning">Moderate</span></td>
-                    <td>Baseline Tracked</td>
+                    <td>False Negatives (Seizures Missed)</td>
+                    <td>${fn}</td>
+                    <td><span class="${fn === 0 ? 'badge-normal' : 'badge-critical'}">${fn === 0 ? 'None Missed' : 'Missed'}</span></td>
                 </tr>
                 <tr>
-                    <td>Median Error (Baseline)</td>
-                    <td>${stats.median}</td>
-                    <td><span class="badge-normal">Low</span></td>
-                    <td>Signal Reconstructed</td>
+                    <td>False Positives (False Alarms)</td>
+                    <td>${fp}</td>
+                    <td><span class="${fp < 5 ? 'badge-normal' : 'badge-warning'}">${fp < 5 ? 'Low' : 'High'}</span></td>
                 </tr>
                 <tr>
-                    <td>Minimum Error</td>
-                    <td>${stats.min}</td>
-                    <td><span class="badge-normal">Minimal</span></td>
-                    <td>Nominal</td>
+                    <td>Detected Annotations (DA)</td>
+                    <td>${da}</td>
+                    <td><span class="badge-normal">Info</span></td>
                 </tr>
                 <tr>
-                    <td>Anomaly Percentage</td>
-                    <td>${res.anomaly_percentage}</td>
-                    <td><span class="badge-warning">Detection Rate</span></td>
-                    <td>${res.anomalies_detected}</td>
+                    <td>Precision / Recall / F1</td>
+                    <td>${prec.toFixed(2)} / ${rec.toFixed(2)} / ${f1.toFixed(2)}</td>
+                    <td><span class="${rec >= 0.5 ? 'badge-normal' : 'badge-critical'}">Overall</span></td>
                 </tr>`;
 
             // ─────────────────────────────────────────
-            //  RECONSTRUCTION LOGIC FIX
+            //  RECONSTRUCTION PLOT — open in new tab
             // ─────────────────────────────────────────
-            const iframe = document.getElementById('reconstructionFrame');
-            const canvas = document.getElementById('aeCanvas');
-            const legend = document.getElementById('wave-legend');
-            
-            // Check if valid URL exists and is not empty
-            if (data.reconstruction_url && data.reconstruction_url.trim() !== '') {
-                console.log('Using real reconstruction from Pi:', data.reconstruction_url);
-                
-                // 1. Hide the dummy animation and legend
-                canvas.style.display = 'none';
-                if (legend) legend.style.display = 'none';
-
-                // 2. Show the iframe
-                iframe.style.display = 'block';
-
-                // 3. Set the source with a timestamp to prevent caching
-                iframe.src = data.reconstruction_url + "?t=" + new Date().getTime();
-            } else {
-                console.warn('No reconstruction URL returned. Using fallback animation.');
-                // Fallback: Show dummy animation
-                initAEAnimation();
+            let reconUrl = data.reconstruction_url || '';
+            if (!reconUrl || reconUrl.trim() === '') {
+                reconUrl = `${PI_BASE}/output/inference.html`;
             }
+
+            console.log('Reconstruction URL:', reconUrl);
+
+            // Hide dummy animation, show the "View Plot" button
+            document.getElementById('ae-placeholder').style.display = 'none';
+            const resultDiv = document.getElementById('ae-result');
+            resultDiv.style.display = 'block';
+            document.getElementById('plot-link').href = reconUrl;
 
             hideOverlay();
         }
 
         // ─────────────────────────────────────────
         // POLL /autoencoder/status every 3 seconds
-        // Exactly like chatbot sends a new fetch per message — short fast requests
         // ─────────────────────────────────────────
         async function pollStatus() {
             try {
@@ -206,7 +198,7 @@
                         'Auto.py is running on Pi...',
                         'Analyzing EDF signal — anomaly detection in progress'
                     );
-                    return; // keep polling
+                    return;
                 }
 
                 if (data.state === 'done') {
@@ -223,21 +215,18 @@
                 }
 
                 if (data.state === 'idle') {
-                    // Should not happen after we called /start — but handle it
                     setLoadingText('Waiting for Pi to start...', 'Retrying start...');
                     await triggerStart();
                 }
 
             } catch (err) {
-                // Network error during poll — don't stop, Pi might briefly be busy
                 console.warn('Poll error (will retry):', err.message);
                 setLoadingText('Polling Pi...', `Connection issue — retrying... (${err.message})`);
             }
         }
 
         // ─────────────────────────────────────────
-        // STEP 1: POST /autoencoder/start — returns immediately
-        // Then we poll status every 3s
+        // STEP 1: POST /autoencoder/start
         // ─────────────────────────────────────────
         async function triggerStart() {
             const resp = await fetch(START_URL, {
@@ -269,11 +258,7 @@
                 await triggerStart();
 
                 setLoadingText('Auto.py started on Pi!', 'Polling for results every 3 seconds...');
-
-                // Begin polling — identical pattern to how chatbot sends a new fetch per message
                 pollInterval = setInterval(pollStatus, 3000);
-
-                // Also poll immediately so we don't wait 3s for first check
                 await pollStatus();
 
             } catch (err) {
@@ -331,12 +316,13 @@
         }
 
         // ─────────────────────────────────────────
-        // WAVE PLOTTER (runs after results arrive)
+        // WAVE PLOTTER (shown before results arrive)
         // ─────────────────────────────────────────
         function initAEAnimation() {
             const canvas = document.getElementById('aeCanvas');
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            let animId, progress = 0;
+            let progress = 0;
             const speed = 15;
             function render(limit) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -357,7 +343,7 @@
                 ctx.stroke();
             }
             function anim() {
-                if (progress < canvas.width) { progress += speed; render(progress); animId = requestAnimationFrame(anim); }
+                if (progress < canvas.width) { progress += speed; render(progress); requestAnimationFrame(anim); }
                 else render(canvas.width);
             }
             canvas.width  = canvas.parentElement.offsetWidth;
@@ -405,13 +391,11 @@
         // INIT
         // ─────────────────────────────────────────
         window.addEventListener('load', () => {
-            // Initialize URL variables
             START_URL = getStartUrl();
             STATUS_URL = getStatusUrl();
             PI_BASE = getPiBaseUrl();
 
             initBgAnimation();
+            initAEAnimation();
             startAnalysis();
         });
-
-    
