@@ -76,6 +76,23 @@ app.get('/eeg-live', (req, res) => {
     res.sendFile(path.join(__dirname, '../html/eeg-live.html'));
 });
 
+// Proxy route — fetches inference.html from Pi and returns it to browser
+// Avoids ERR_CONNECTION_TIMED_OUT caused by browser directly hitting Flask
+app.get('/pi-plot', async (req, res) => {
+    const ip = req.query.ip;
+    if (!ip) return res.status(400).send('Missing ip parameter');
+    const url = `http://${ip}:5001/output/inference.html`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) return res.status(response.status).send(`Pi returned ${response.status}`);
+        const html = await response.text();
+        res.setHeader('Content-Type', 'text/html');
+        res.send(html);
+    } catch (err) {
+        res.status(502).send(`Could not reach Pi: ${err.message}`);
+    }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
