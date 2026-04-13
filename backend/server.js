@@ -93,6 +93,45 @@ app.get('/pi-plot', async (req, res) => {
     }
 });
 
+// Proxy: start EEG recording on Pi (runs main.py)
+app.post('/pi-eeg-start', async (req, res) => {
+    const ip = req.query.ip;
+    if (!ip) return res.status(400).json({ success: false, error: 'Missing ip' });
+    try {
+        const response = await fetch(`http://${ip}:5001/eeg/start-recording`, { method: 'POST' });
+        const data = await response.json();
+        res.json(data);
+    } catch (err) {
+        res.status(502).json({ success: false, error: err.message });
+    }
+});
+
+// Proxy: poll EEG recording status
+app.get('/pi-eeg-status', async (req, res) => {
+    const ip = req.query.ip;
+    if (!ip) return res.status(400).json({ success: false, error: 'Missing ip' });
+    try {
+        const response = await fetch(`http://${ip}:5001/eeg/recording-status`);
+        const data = await response.json();
+        res.json(data);
+    } catch (err) {
+        res.status(502).json({ success: false, error: err.message });
+    }
+});
+
+// Proxy: get EDF channel data as JSON
+app.get('/pi-eeg-data', async (req, res) => {
+    const ip = req.query.ip;
+    if (!ip) return res.status(400).json({ success: false, error: 'Missing ip' });
+    try {
+        const response = await fetch(`http://${ip}:5001/eeg/get-data`);
+        const data = await response.json();
+        res.json(data);
+    } catch (err) {
+        res.status(502).json({ success: false, error: err.message });
+    }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

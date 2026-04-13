@@ -8,6 +8,8 @@ import psutil
 import threading
 import sys
 import glob
+import gc
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -24,15 +26,16 @@ CLASSIFICATION_SCRIPT = '/home/neuromind/Neuromind/Codes/classification.py'
 AUTOENCODER_SCRIPT = '/home/neuromind/Neuromind/Codes/Auto.py'
 CLASSIFICATION_WORKDIR = '/home/neuromind/Neuromind/Codes'
 AUTOENCODER_WORKDIR = '/home/neuromind/Neuromind/Codes'
-OUTPUT_FOLDER = '/home/neuromind/Neuromind/Codes/output'
+OUTPUT_FOLDER = '/home/neuromind/Neuromind/Codes/single_edf_inference_output'
 
 # NEW: CombinedEEGHandler configuration
-HANDLER_PATH = '/home/neuromind/Downloads/combined_handler_ds_abnormal_control'
+HANDLER_PATH = '/home/neuromind/Neuromind/Codes/handler_combined.py'
 CONFIG_PATH = '/home/neuromind/Neuromind/Codes/config_combined.json'
 UPLOADS_FOLDER = '/home/neuromind/Neuromind/Codes/uploads'
 
 # Add handler path to sys.path for imports
 sys.path.insert(0, HANDLER_PATH)
+
 
 # Global classification handler (lazy loaded)
 _classification_handler = None
@@ -124,8 +127,15 @@ def get_classification_handler():
 # ===============================
 def run_autoencoder_background():
     """Background thread that runs the autoencoder script"""
-    global ae_job
+    global ae_job, _classification_handler
     try:
+        # Free the classification handler from RAM before loading the autoencoder
+        # model — prevents OOM crash on Pi when both models are loaded at once
+        if _classification_handler is not None:
+            print("🧹 Freeing classification handler to save RAM...")
+            _classification_handler = None
+            gc.collect()
+
         print("🔧 Starting autoencoder background process...")
         result = subprocess.run(
             [VENV_PYTHON, AUTOENCODER_SCRIPT],
@@ -139,10 +149,7 @@ def run_autoencoder_background():
         print(f"✅ Autoencoder process completed with return code: {result.returncode}")
 
         if result.returncode != 0:
-            error_lines = parse_section_output(result.stdout, "ERROR")
-            error_msg = ' '.join(error_lines) if error_lines else (
-                result.stderr.strip() or f'Script exited with code {result.returncode}'
-            )
+            error_msg = result.stderr.strip() or f'Script exited with code {result.returncode}'
             print(f"❌ Autoencoder error: {error_msg}")
             with ae_lock:
                 ae_job['running'] = False
@@ -151,64 +158,46 @@ def run_autoencoder_background():
                 ae_job['error'] = error_msg
             return
 
-        # Parse ANALYSIS COMPLETE section
-        summary_lines = parse_section_output(result.stdout, "ANALYSIS COMPLETE")
-
-        parsed = {
-            'file_loaded': 'Unknown',
-            'signal_shape': 'Unknown',
-            'anomalies_detected': '0/0',
-            'anomaly_percentage': '0%',
-            'mad_statistics': {
-                'mean': '0',
-                'max': '0',
-                'median': '0',
-                'min': '0'
-            },
-            'output_file': ''
-        }
-
-        for line in summary_lines:
-            key, value = parse_key_value(line)
-            if key == "File Name":
-                parsed['file_loaded'] = value
-            elif key == "Signal Shape":
-                parsed['signal_shape'] = value
-            elif key == "Anomalies Detected":
-                parsed['anomalies_detected'] = value
-            elif key == "Anomaly Percentage":
-                parsed['anomaly_percentage'] = value
-            elif key == "MAD Mean":
-                parsed['mad_statistics']['mean'] = value
-            elif key == "MAD Max":
-                parsed['mad_statistics']['max'] = value
-            elif key == "MAD Median":
-                parsed['mad_statistics']['median'] = value
-            elif key == "MAD Min":
-                parsed['mad_statistics']['min'] = value
-            elif key == "Output File":
-                parsed['output_file'] = value
-
-        # Parse MAD STATISTICS section for detailed stats
-        mad_lines = parse_section_output(result.stdout, "MAD STATISTICS")
-        detailed_stats = {}
-        for line in mad_lines:
-            key, value = parse_key_value(line)
-            if key:
-                detailed_stats[key] = value
-
-        # Parse timing
-        timing_lines = parse_section_output(result.stdout, "TIMING")
-        timing = timing_lines[0] if timing_lines else "N/A"
-
-        # Extract just the filename from the full output file path
-        output_filename = ''
-        if parsed['output_file']:
-            output_filename = os.path.basename(parsed['output_file'])
-
+        # --- Check if output file was created ---
+        output_file = os.path.join(OUTPUT_FOLDER, 'inference.html')
+        output_filename = 'inference.html' if os.path.exists(output_file) else ''
         reconstruction_url = f"http://{PI_IP}:5001/output/{output_filename}" if output_filename else ''
 
-        print(f"📊 Autoencoder results parsed successfully")
+        # --- Extract basic info from Auto.py stdout ---
+        stdout_lines = result.stdout.split('\n')
+
+        file_loaded = 'Unknown'
+        signal_shape = 'Unknown'
+        tp = fn = fp = da = 0
+
+        for line in stdout_lines:
+            line_s = line.strip()
+            if 'Processing' in line_s and '.edf' in line_s:
+                parts = line_s.split('Processing')
+                if len(parts) > 1:
+                    file_loaded = parts[1].strip()
+            elif line_s.startswith('Duration:'):
+                signal_shape = line_s
+            elif line_s.startswith('TP='):
+                for token in line_s.split():
+                    if token.startswith('TP='): tp = int(token.split('=')[1])
+                    elif token.startswith('FN='): fn = int(token.split('=')[1])
+                    elif token.startswith('FP='): fp = int(token.split('=')[1])
+                    elif token.startswith('DA='): da = int(token.split('=')[1])
+            elif 'Threshold:' in line_s:
+                signal_shape += f' | {line_s}'
+
+        total_flags = tp + fp + da
+        parsed = {
+            'file_loaded': file_loaded,
+            'signal_shape': signal_shape,
+            'anomalies_detected': f'{total_flags}',
+            'tp': tp, 'fn': fn, 'fp': fp, 'da': da,
+        }
+
+        print(f"📊 Autoencoder results: TP={tp} FN={fn} FP={fp} DA={da}")
+        print(f"📊 Reconstruction URL: {reconstruction_url}")
+
         with ae_lock:
             ae_job['running'] = False
             ae_job['done'] = True
@@ -216,8 +205,6 @@ def run_autoencoder_background():
             ae_job['error'] = None
             ae_job['result'] = {
                 'parsed_data': parsed,
-                'detailed_stats': detailed_stats,
-                'timing': timing,
                 'raw_output': combined_output,
                 'reconstruction_url': reconstruction_url,
                 'output_filename': output_filename
@@ -294,6 +281,34 @@ def wake():
             'success': False,
             'message': f'Failed to start upload server: {str(e)}'
         }), 500
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    """Receive an EDF/CSV file and save it to the uploads folder."""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'No file provided'}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'Empty filename'}), 400
+
+        filename = secure_filename(file.filename)
+        os.makedirs(UPLOADS_FOLDER, exist_ok=True)
+        save_path = os.path.join(UPLOADS_FOLDER, filename)
+        file.save(save_path)
+
+        print(f"✅ File uploaded: {filename} ({os.path.getsize(save_path)} bytes)")
+        return jsonify({
+            'success': True,
+            'message': f'File {filename} uploaded successfully',
+            'path': save_path
+        }), 200
+
+    except Exception as e:
+        print(f"❌ Upload error: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
@@ -578,6 +593,88 @@ def serve_output_file(filename):
         }), 500
 
 # ===============================
+# EEG RECORDING ENDPOINTS
+# Runs main.py on Pi, reads resulting EDF, returns channel data as JSON
+# ===============================
+
+MAIN_PY_SCRIPT = '/home/neuromind/Neuromind/Codes/cyton-board-connection/1. real-time-pipeline/main.py'
+MAIN_PY_WORKDIR = '/home/neuromind/Neuromind/Codes/cyton-board-connection/1. real-time-pipeline'
+EDF_RECORDING_PATH = '/home/neuromind/Neuromind/Codes/cyton-board-connection/1. real-time-pipeline/outputs/recordings/record_1.edf'
+
+eeg_job = {'running': False, 'done': False, 'success': False, 'error': None}
+eeg_lock = threading.Lock()
+
+def run_eeg_recording():
+    global eeg_job
+    try:
+        print('🎙️ Starting EEG recording (main.py)...')
+        result = subprocess.run(
+            [VENV_PYTHON, MAIN_PY_SCRIPT],
+            capture_output=True,
+            text=True,
+            timeout=300,
+            cwd=MAIN_PY_WORKDIR
+        )
+        with eeg_lock:
+            eeg_job['running'] = False
+            eeg_job['done'] = True
+            eeg_job['success'] = result.returncode == 0
+            eeg_job['error'] = result.stderr.strip() if result.returncode != 0 else None
+        print(f'✅ EEG recording done (code {result.returncode})')
+    except subprocess.TimeoutExpired:
+        with eeg_lock:
+            eeg_job['running'] = False
+            eeg_job['done'] = True
+            eeg_job['success'] = False
+            eeg_job['error'] = 'Recording timed out'
+    except Exception as e:
+        with eeg_lock:
+            eeg_job['running'] = False
+            eeg_job['done'] = True
+            eeg_job['success'] = False
+            eeg_job['error'] = str(e)
+
+@app.route('/eeg/start-recording', methods=['POST'])
+def eeg_start_recording():
+    global eeg_job
+    with eeg_lock:
+        if eeg_job['running']:
+            return jsonify({'success': True, 'message': 'Already recording'}), 200
+        eeg_job = {'running': True, 'done': False, 'success': False, 'error': None}
+    t = threading.Thread(target=run_eeg_recording, daemon=True)
+    t.start()
+    return jsonify({'success': True, 'message': 'Recording started'}), 200
+
+@app.route('/eeg/recording-status', methods=['GET'])
+def eeg_recording_status():
+    with eeg_lock:
+        return jsonify(dict(eeg_job)), 200
+
+@app.route('/eeg/get-data', methods=['GET'])
+def eeg_get_data():
+    try:
+        import mne
+        raw = mne.io.read_raw_edf(EDF_RECORDING_PATH, preload=True, verbose=False)
+        data, times = raw.get_data(return_times=True)
+        sfreq = raw.info['sfreq']
+        channels = []
+        for i, ch_name in enumerate(raw.ch_names):
+            ch_data = (data[i] * 1e6).tolist()  # Convert V to uV
+            if len(ch_data) > 2500:
+                step = len(ch_data) // 2500
+                ch_data = ch_data[::step][:2500]
+            channels.append({'name': ch_name, 'data': ch_data})
+        return jsonify({
+            'success': True,
+            'channels': channels,
+            'sfreq': sfreq,
+            'duration': float(times[-1])
+        }), 200
+    except Exception as e:
+        print(f'❌ EDF read error: {str(e)}')
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ===============================
 # MAIN
 # ===============================
 
@@ -606,4 +703,4 @@ if __name__ == '__main__':
     print("=" * 70)
     print("🚀 Server starting on 0.0.0.0:5001...")
     print()
-    app.run(host='0.0.0.0', port=5001, debug=False)
+    app.run(host='0.0.0.0', port=5001, debug=False, threaded=True)
