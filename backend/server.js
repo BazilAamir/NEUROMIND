@@ -84,7 +84,7 @@ app.get('/pi-plot', async (req, res) => {
     const url = `http://${ip}:5001/output/inference.html`;
     try {
         const response = await fetch(url);
-        if (!response.ok) return res.status(response.status).send(`Pi returned ${response.status}`);
+        if (!response.ok) return res.status(response.status).send(`Pi returned ${response.status}`);npm 
         const html = await response.text();
         res.setHeader('Content-Type', 'text/html');
         res.send(html);

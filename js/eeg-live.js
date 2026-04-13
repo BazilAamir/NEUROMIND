@@ -342,15 +342,60 @@ const EEGLive = {
 
     // Poll Pi until recording is done, then load EDF data
     _pollRecording(ip) {
+        let pollCount = 0;
+        const resultsPanel = document.getElementById('inferenceResultsPanel');
+        const resultsContent = document.getElementById('inferenceResultsContent');
+        const tagsContainer = document.getElementById('inferenceTags');
+
+        if (resultsPanel) {
+            resultsPanel.style.display = 'block';
+            resultsContent.innerHTML = 'Connecting to Pi...<br>Initiated recording sequence...';
+            tagsContainer.innerHTML = '';
+        }
+
         const interval = setInterval(async () => {
+            pollCount++;
             try {
                 const resp = await fetch(`/pi-eeg-status?ip=${ip}`);
                 const status = await resp.json();
+
+                if (resultsContent && !status.done) {
+                    resultsContent.innerHTML = `Recording in progress... (Waiting for ${pollCount} ticks)<br>Pi is actively processing the session...`;
+                }
 
                 if (status.done) {
                     clearInterval(interval);
                     this.config.streaming = false;
                     this.updateButtonStates();
+
+                    // Display Inference Results from Python STDOUT
+                    if (resultsPanel) {
+                        resultsPanel.style.display = 'block';
+                        if (status.output) {
+                            resultsContent.innerHTML = `<strong>Data Received from Server:</strong><br><br>${String(status.output).replace(/\n/g, '<br>')}`;
+                            
+                            // Optionally extract detected labels (e.g., DS, CW) to make helpful badges
+                            const extractedLabels = new Set();
+                            const matches = [...status.output.matchAll(/(?:chunk#\d+\s*->\s*|Final subject stage\s*->\s*)([A-Z0-9]+)/g)];
+                            matches.forEach(m => extractedLabels.add(m[1]));
+                            
+                            tagsContainer.innerHTML = '';
+                            if (extractedLabels.size > 0) {
+                                extractedLabels.forEach(label => {
+                                    const badge = document.createElement('span');
+                                    badge.style.cssText = 'background: rgba(139, 92, 246, 0.2); color: #c4b5fd; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.4);';
+                                    badge.innerHTML = `<i class="fas fa-tag"></i> ${label}`;
+                                    tagsContainer.appendChild(badge);
+                                });
+                            } else {
+                                tagsContainer.innerHTML = '<span style="color: #9ca3af; font-size: 0.85rem;">No unique labels detected.</span>';
+                            }
+                        } else if (!status.success) {
+                            resultsContent.innerHTML = `<span style="color: #ef4444;">Recording Failed:</span><br>${status.error || 'No output returned'}`;
+                        } else {
+                            resultsContent.innerHTML = 'Session finished successfully but no textual output was returned from main.py.';
+                        }
+                    }
 
                     if (status.success) {
                         this._loadEdfData(ip);
@@ -366,6 +411,10 @@ const EEGLive = {
                 this.config.streaming = false;
                 this.updateButtonStates();
                 this.showError('Lost contact with Pi: ' + err.message);
+                
+                if (resultsContent) {
+                    resultsContent.innerHTML = `<span style="color: #ef4444;">Connection Error:</span><br>${err.message}`;
+                }
             }
         }, 2000);
     },

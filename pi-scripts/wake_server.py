@@ -1,3 +1,4 @@
+
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import subprocess
@@ -597,12 +598,71 @@ def serve_output_file(filename):
 # Runs main.py on Pi, reads resulting EDF, returns channel data as JSON
 # ===============================
 
-MAIN_PY_SCRIPT = '/home/neuromind/Neuromind/Codes/cyton-board-connection/1. real-time-pipeline/main.py'
-MAIN_PY_WORKDIR = '/home/neuromind/Neuromind/Codes/cyton-board-connection/1. real-time-pipeline'
-EDF_RECORDING_PATH = '/home/neuromind/Neuromind/Codes/cyton-board-connection/1. real-time-pipeline/outputs/recordings/record_1.edf'
+MAIN_PY_SCRIPT =     '/home/neuromind/cyton-board-connection/cyton-board-connection/1. real-time-pipeline/main.py'
+MAIN_PY_WORKDIR =    '/home/neuromind/cyton-board-connection/cyton-board-connection/1. real-time-pipeline'
+EDF_RECORDING_PATH = '/home/neuromind/cyton-board-connection/cyton-board-connection/1. real-time-pipeline/outputs/recordings/record_1.edf'
+RESULTS_FOLDER     = '/home/neuromind/cyton-board-connection/cyton-board-connection/1. real-time-pipeline/outputs/results'
+SESSION_RESULTS_JSON = RESULTS_FOLDER + '/session_results.json'
+SUMMARY_CSV          = RESULTS_FOLDER + '/summary.csv'
 
-eeg_job = {'running': False, 'done': False, 'success': False, 'error': None}
+eeg_job = {'running': False, 'done': False, 'success': False, 'error': None, 'output': ''}
 eeg_lock = threading.Lock()
+
+def _read_session_results():
+    """Read the last session from session_results.json and return a formatted summary."""
+    import json as _json
+    try:
+        if os.path.exists(SESSION_RESULTS_JSON):
+            with open(SESSION_RESULTS_JSON, 'r') as f:
+                sessions = _json.load(f)
+
+            # sessions is a list — take the most recent entry
+            if not sessions:
+                return 'No sessions found in results file.'
+            s = sessions[-1]
+
+            # Final verdict
+            verdict = s.get('final_subject_stage', 'Unknown')
+            started  = s.get('started_at', 'N/A')
+            ended    = s.get('ended_at', 'N/A')
+            n_chunks = s.get('total_chunks', 0)
+
+            # Vote breakdown
+            votes = s.get('final_votes', {})
+            votes_str = '  |  '.join(f'{label}: {count}' for label, count in votes.items())
+
+            # Avg stage 1 probabilities
+            s1p = s.get('avg_stage1_mean_probs', {})
+            s1_str = '  |  '.join(
+                f'{k}: {round(v * 100, 1)}%' for k, v in s1p.items() if v is not None
+            )
+
+            # Avg stage 2 probabilities (may be null)
+            s2p = s.get('avg_stage2_mean_probs', {})
+            s2_items = [(k, v) for k, v in s2p.items() if v is not None]
+            s2_str = '  |  '.join(f'{k}: {round(v * 100, 1)}%' for k, v in s2_items) if s2_items else 'N/A (stage 2 not reached)'
+
+            # Per-chunk labels (compact one-liner)
+            chunk_labels = [
+                f"#{c['chunk_index']}:{c.get('final_label', '?')}"
+                for c in s.get('chunk_results', [])
+            ]
+
+            lines = [
+                f'Final Diagnosis:    {verdict}',
+                f'Session:            {started}  →  {ended}',
+                f'Chunks Processed:   {n_chunks}',
+                f'Chunk Votes:        {votes_str}',
+                f'Avg Stage-1 Probs:  {s1_str}',
+                f'Avg Stage-2 Probs:  {s2_str}',
+                f'Chunk Labels:       {", ".join(chunk_labels)}',
+            ]
+            return '\n'.join(lines)
+
+    except Exception as e:
+        print(f'⚠️ Could not read session_results.json: {e}')
+
+    return ''
 
 def run_eeg_recording():
     global eeg_job
@@ -615,11 +675,19 @@ def run_eeg_recording():
             timeout=300,
             cwd=MAIN_PY_WORKDIR
         )
+        success = result.returncode == 0
+        # main.py logs to stdout but saves actual results to session_results.json
+        # Always read the JSON — stdout only contains startup/connection noise
+        output = ''
+        if success:
+            output = _read_session_results()
+            print(f'📄 Loaded results from session_results.json ({len(output)} chars)')
         with eeg_lock:
             eeg_job['running'] = False
             eeg_job['done'] = True
-            eeg_job['success'] = result.returncode == 0
-            eeg_job['error'] = result.stderr.strip() if result.returncode != 0 else None
+            eeg_job['success'] = success
+            eeg_job['error'] = result.stderr.strip() if not success else None
+            eeg_job['output'] = output
         print(f'✅ EEG recording done (code {result.returncode})')
     except subprocess.TimeoutExpired:
         with eeg_lock:
@@ -627,12 +695,14 @@ def run_eeg_recording():
             eeg_job['done'] = True
             eeg_job['success'] = False
             eeg_job['error'] = 'Recording timed out'
+            eeg_job['output'] = ''
     except Exception as e:
         with eeg_lock:
             eeg_job['running'] = False
             eeg_job['done'] = True
             eeg_job['success'] = False
             eeg_job['error'] = str(e)
+            eeg_job['output'] = ''
 
 @app.route('/eeg/start-recording', methods=['POST'])
 def eeg_start_recording():
@@ -640,7 +710,7 @@ def eeg_start_recording():
     with eeg_lock:
         if eeg_job['running']:
             return jsonify({'success': True, 'message': 'Already recording'}), 200
-        eeg_job = {'running': True, 'done': False, 'success': False, 'error': None}
+        eeg_job = {'running': True, 'done': False, 'success': False, 'error': None, 'output': ''}
     t = threading.Thread(target=run_eeg_recording, daemon=True)
     t.start()
     return jsonify({'success': True, 'message': 'Recording started'}), 200
@@ -704,3 +774,4 @@ if __name__ == '__main__':
     print("🚀 Server starting on 0.0.0.0:5001...")
     print()
     app.run(host='0.0.0.0', port=5001, debug=False, threaded=True)
+
