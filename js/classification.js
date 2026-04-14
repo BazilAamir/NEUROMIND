@@ -189,8 +189,8 @@
                 uploadArea.classList.remove('success');
                 uploadIcon.className = 'fas fa-cloud-upload-alt upload-icon';
                 uploadIcon.style.color = '#38bdf8';
-                uploadText.textContent = 'Click to Upload EEG/MRI Files';
-                uploadHint.textContent = 'Supported: .edf, .csv, .nii, .jpg';
+                uploadText.textContent = 'Click to Upload EEG Files';
+                uploadHint.textContent = 'Supported: .edf';
                 statusBox.className = 'alert-box info';
                 statusMessage.innerHTML = '<strong>Ready:</strong> Select a file to upload to Raspberry Pi';
                 e.target.value = '';
