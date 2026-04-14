@@ -349,7 +349,7 @@ const EEGLive = {
 
         if (resultsPanel) {
             resultsPanel.style.display = 'block';
-            resultsContent.innerHTML = 'Connecting to Pi...<br>Initiated recording sequence...';
+            resultsContent.innerHTML = '<span class="inference-waiting"><i class="fas fa-circle-notch fa-spin"></i> Connecting to Pi... initiated recording sequence.</span>';
             tagsContainer.innerHTML = '';
         }
 
@@ -360,7 +360,7 @@ const EEGLive = {
                 const status = await resp.json();
 
                 if (resultsContent && !status.done) {
-                    resultsContent.innerHTML = `Recording in progress... (Waiting for ${pollCount} ticks)<br>Pi is actively processing the session...`;
+                    resultsContent.innerHTML = `<span class="inference-waiting"><i class="fas fa-circle-notch fa-spin"></i> Recording in progress... (tick ${pollCount}) &mdash; Pi is actively processing the session.</span>`;
                 }
 
                 if (status.done) {
@@ -371,29 +371,30 @@ const EEGLive = {
                     // Display Inference Results from Python STDOUT
                     if (resultsPanel) {
                         resultsPanel.style.display = 'block';
+                        tagsContainer.innerHTML = '';
                         if (status.output) {
-                            resultsContent.innerHTML = `<strong>Data Received from Server:</strong><br><br>${String(status.output).replace(/\n/g, '<br>')}`;
-                            
-                            // Optionally extract detected labels (e.g., DS, CW) to make helpful badges
-                            const extractedLabels = new Set();
-                            const matches = [...status.output.matchAll(/(?:chunk#\d+\s*->\s*|Final subject stage\s*->\s*)([A-Z0-9]+)/g)];
-                            matches.forEach(m => extractedLabels.add(m[1]));
-                            
-                            tagsContainer.innerHTML = '';
-                            if (extractedLabels.size > 0) {
-                                extractedLabels.forEach(label => {
-                                    const badge = document.createElement('span');
-                                    badge.style.cssText = 'background: rgba(139, 92, 246, 0.2); color: #c4b5fd; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.4);';
-                                    badge.innerHTML = `<i class="fas fa-tag"></i> ${label}`;
-                                    tagsContainer.appendChild(badge);
+                            resultsContent.innerHTML = this._renderInferenceOutput(status.output);
+
+                            // Extract chunk labels for tag badges
+                            const chunkLabelMatch = status.output.match(/Chunk Labels:\s*(.+)/);
+                            if (chunkLabelMatch) {
+                                chunkLabelMatch[1].split(',').forEach(part => {
+                                    const label = part.trim();
+                                    if (label) {
+                                        const badge = document.createElement('span');
+                                        badge.className = 'inference-chunk-tag';
+                                        badge.textContent = label;
+                                        tagsContainer.appendChild(badge);
+                                    }
                                 });
-                            } else {
-                                tagsContainer.innerHTML = '<span style="color: #9ca3af; font-size: 0.85rem;">No unique labels detected.</span>';
+                            }
+                            if (!tagsContainer.children.length) {
+                                tagsContainer.innerHTML = '<span class="inference-waiting">No chunk labels detected.</span>';
                             }
                         } else if (!status.success) {
-                            resultsContent.innerHTML = `<span style="color: #ef4444;">Recording Failed:</span><br>${status.error || 'No output returned'}`;
+                            resultsContent.innerHTML = `<span class="inference-error"><i class="fas fa-exclamation-triangle"></i> Recording Failed: ${status.error || 'No output returned'}</span>`;
                         } else {
-                            resultsContent.innerHTML = 'Session finished successfully but no textual output was returned from main.py.';
+                            resultsContent.innerHTML = '<span class="inference-waiting">Session finished but no output was returned.</span>';
                         }
                     }
 
@@ -417,6 +418,53 @@ const EEGLive = {
                 }
             }
         }, 2000);
+    },
+
+    // Parse inference output text into structured HTML
+    _renderInferenceOutput(text) {
+        const parse = (key) => {
+            const m = text.match(new RegExp(key + ':\\s*(.+)'));
+            return m ? m[1].trim() : null;
+        };
+
+        const diagnosis   = parse('Final Diagnosis');
+        const session     = parse('Session');
+        const chunks      = parse('Chunks Processed');
+        const votes       = parse('Chunk Votes');
+        const stage1      = parse('Avg Stage-1 Probs');
+        const stage2      = parse('Avg Stage-2 Probs');
+
+        let html = '';
+
+        if (diagnosis) {
+            html += `
+            <div class="inference-diagnosis-banner">
+                <div>
+                    <div class="inference-diagnosis-label">Final Diagnosis</div>
+                    <div class="inference-diagnosis-value">${diagnosis}</div>
+                </div>
+            </div>`;
+        }
+
+        const stats = [];
+        if (session)  stats.push({ label: 'Session', value: session.replace('→', '&rarr;') });
+        if (chunks)   stats.push({ label: 'Chunks Processed', value: chunks });
+        if (votes)    stats.push({ label: 'Chunk Votes', value: votes });
+        if (stage1)   stats.push({ label: 'Avg Stage-1 Probs', value: stage1 });
+        if (stage2)   stats.push({ label: 'Avg Stage-2 Probs', value: stage2 });
+
+        if (stats.length) {
+            html += '<div class="inference-stats-grid">';
+            stats.forEach(s => {
+                html += `<div class="inference-stat-item">
+                    <div class="inference-stat-label">${s.label}</div>
+                    <div class="inference-stat-value">${s.value}</div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+
+        return html || `<span class="inference-waiting">${text}</span>`;
     },
 
     // Fetch EDF channel data from Pi and render in charts

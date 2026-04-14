@@ -238,16 +238,12 @@
         </div>
 
         <!-- Inference Results -->
-        <div class="inference-results" id="inferenceResultsPanel" style="display: block; margin-top: 2rem; background: rgba(17,24,39,0.8); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 1.5rem; backdrop-filter: blur(10px);">
-            <h3 style="color: #fff; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
-                <i class="fas fa-poll"></i> Session Inference Results
-            </h3>
-            <div id="inferenceResultsContent" style="color: #d1d5db; font-family: 'Courier New', Courier, monospace; white-space: pre-wrap; font-size: 0.9rem; max-height: 300px; overflow-y: auto;">
-                Waiting for recording to finish... click "Start Stream" to test.
+        <div class="inference-results" id="inferenceResultsPanel">
+            <h3><i class="fas fa-poll"></i> Session Inference Results</h3>
+            <div id="inferenceResultsContent">
+                <span class="inference-waiting"><i class="fas fa-clock"></i> Waiting for recording to finish... click "Start Stream" to begin.</span>
             </div>
-            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;" id="inferenceTags">
-                <!-- Badges injected by JS -->
-            </div>
+            <div id="inferenceTags"></div>
         </div>
     </main>
 
