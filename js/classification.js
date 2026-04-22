@@ -159,20 +159,6 @@
                 throw new Error(uploadResult.message || 'Upload server returned failure');
             }
 
-            // ── STEP 3: Shutdown upload server ──
-            uploadText.textContent = 'Upload Complete!';
-            uploadHint.textContent = 'Shutting down Pi upload server...';
-
-            // ✅ FIX: Add headers + body here too
-            await fetch(getPiShutdownUrl(), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
-
             // ── Success UI ──
             uploadArea.classList.remove('uploading');
             uploadArea.classList.add('success');
